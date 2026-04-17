@@ -1,13 +1,10 @@
 # Deployment Information
 
 ## Public URL
-
-<!-- TODO: Điền URL sau khi deploy -->
 https://day12-production-08c4.up.railway.app
 
 ## Platform
-
-Railway <!-- hoặc Render / Cloud Run -->
+Railway
 
 ## Environment Variables đã set
 
@@ -41,7 +38,7 @@ curl -X POST https://day12-production-08c4.up.railway.app/ask \
 ### Có API key → 200
 ```bash
 curl -X POST https://day12-production-08c4.up.railway.app/ask \
-  -H "X-API-Key: YOUR_KEY" \
+  -H "X-API-Key: my-secret-key-2024" \
   -H "Content-Type: application/json" \
   -d '{"question": "Hello", "user_id": "test"}'
 # Expected: 200 + answer
@@ -52,7 +49,7 @@ curl -X POST https://day12-production-08c4.up.railway.app/ask \
 for i in {1..15}; do
   curl -s -o /dev/null -w "%{http_code}\n" \
     -X POST https://day12-production-08c4.up.railway.app/ask \
-    -H "X-API-Key: YOUR_KEY" \
+    -H "X-API-Key: my-secret-key-2024" \
     -H "Content-Type: application/json" \
     -d '{"question": "test", "user_id": "test"}'
 done
@@ -60,8 +57,6 @@ done
 ```
 
 ## Screenshots
-
-<!-- TODO: Thêm ảnh sau khi deploy -->
 - [Deployment dashboard](screenshots/dashboard.png)
 - [Service running](screenshots/running.png)
 - [Test results](screenshots/test.png)

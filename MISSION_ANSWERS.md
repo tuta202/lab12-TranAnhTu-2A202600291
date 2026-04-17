@@ -1,5 +1,9 @@
 # Day 12 Lab - Mission Answers
 
+> **Student Name:** Trần Anh Tú
+> **Student ID:** 2A202600291
+> **Date:** 17/4/2026
+
 ## Part 1: Localhost vs Production
 
 ### Exercise 1.1: Anti-patterns found
@@ -62,6 +66,10 @@ Hệ thống gồm 4 dịch vụ chính:
 ---
 
 ## Part 3: Cloud Deployment
+
+### Exercise 3.1: Railway deployment
+Platform: Railway
+URL: https://day12-production-08c4.up.railway.app
 
 ### Exercise 3.2: So sánh Railway và Render
 | Tiêu chí | Railway (railway.toml) | Render (render.yaml) |
@@ -136,12 +144,10 @@ def check_budget(user_id: str, estimated_cost: float) -> bool:
 - **Graceful Shutdown**: Cấu hình Signal Handler bắt tín hiệu `SIGTERM`. App sẽ từ chối request mới và đợi các in-flight requests (đợi timeout max 30s) hoàn tất rồi mới tắt hoàn toàn, giúp người dùng không bị mất data giữa chừng.
 
 ### Exercise 5.3 & 5.4 & 5.5: Stateless Design & Load Balancing
-- **Vấn đề Stateful**: Nếu lưu hội thoại (history) vào RAM (biến dict), khi scale nhiều instances, Request 1 gọi Instance A, Request 2 gọi Instance B. Lúc này Inst B không có lịch sử chat từ Inst A, gây mất context trầm trọng.
-- **Cách Stateless hoạt động**: Lưu toàn bộ Trạng Thái Hội Thoại (Session History) vào **Redis**. Tất cả Agent Instances đều query từ 1 Redis chung.
-- **Dữ liệu thực tế (`test_stateless.py`)**: 
+- **Dữ liệu thực tế (test_stateless.py)**:
   - Đã chạy `docker compose up --scale agent=3`.
-  - Thực hiện 5 câu hỏi liên tiếp, kết quả cho thấy Nginx đã load balance requests tới 3 Instances riêng biệt: `instance-5d730e`, `instance-25ad99`, `instance-12c219`.
-  - Tính nguyên vẹn vẫn được đảm bảo: `Session history preserved across all instances via Redis!`. Lịch sử chat được giữ đủ 10 messages mặc dù instance thay đổi liên tục.
+  - Thực hiện 5 câu hỏi liên tiếp, kết quả cho thấy Nginx đã load balance requests tới các Instances riêng biệt thông qua header `X-Served-By`.
+  - Tính nguyên vẹn vẫn được đảm bảo: Lịch sử chat được lưu trữ tập trung tại Redis, giúp duy trì context hội thoại dù request được xử lý bởi các instance khác nhau.
 
 ---
 *Tự đánh giá: Đã hoàn thành Checkpoint 5.*
@@ -150,29 +156,24 @@ def check_budget(user_id: str, estimated_cost: float) -> bool:
 
 ## Part 6: Final Project - Production-Ready AI Agent
 
-### 🏗️ Architecture Overview
-Dự án cuối khóa `my-production-agent` đã tích hợp đầy đủ các thành phần:
-- **Load Balancer (Nginx)**: Phân phối traffic qua 3 Agent instances.
-- **Agent Cluster (FastAPI)**: 3 instances chạy song song, stateless hoàn toàn.
-- **State Store (Redis)**: Lưu trữ Session History, Rate Limiting counters, và Cost Guard budgets.
+### 📊 Kết quả kiểm thử thực tế (Railway Deployment)
+Việc kiểm thử được thực hiện bằng PowerShell gọi tới Public URL. Kết quả như sau:
 
-### 🛡️ Security & Guardrails
-- **API Key Auth**: Tích hợp `verify_api_key` dependency cho mọi request `/ask`.
-- **Rate Limiting**: Giới hạn 10 requests/phút mỗi user (Sử dụng Redis Sliding Window).
-- **Cost Guard**: Giới hạn $10/tháng mỗi user (Giả lập $0.1/request).
-
-### 🚀 Reliability & Performance
-- **Multi-stage Docker**: Tối ưu kích thước image và bảo mật.
-- **Health & Readiness Check**: 
-  - `/health`: Trả về trạng thái sống của process.
-  - `/ready`: Kiểm tra kết nối Redis và trạng thái sẵn sàng của Agent.
-- **Graceful Shutdown**: Xử lý tín hiệu `SIGTERM`, chờ request đang xử lý (in-flight) hoàn thành trước khi tắt.
-
-### 📊 Kết quả kiểm thử (Local)
-- **Health Check**: `curl http://localhost/health` -> `{"status":"ok","version":"1.0.0"}`
-- **Readiness Check**: `curl http://localhost/ready` -> `{"status":"ready"}`
-- **API Interaction**: Gửi câu hỏi kèm `X-API-Key` thành công, nhận response từ Mock LLM và history được lưu vào Redis.
-- **Statelessness**: Đã xác nhận requests được phục vụ bởi các instance khác nhau (`X-Served-By` header) nhưng history vẫn nhất quán.
+- **Health Check**: `{"status":"ok","version":"1.0.0"}`
+- **Readiness Check**: `{"status":"ready"}`
+- **Security Check (No API Key)**: Trả về lỗi `401 Unauthorized` (đúng như kỳ vọng).
+- **API Interaction (With API Key)**:
+  ```json
+  {
+    "session_id": "sess_test_1776434872",
+    "question": "Hello",
+    "answer": "Đây là câu trả lời từ AI agent (mock). Trong production, đây sẽ là response từ OpenAI/Anthropic.",
+    "history_length": 2
+  }
+  ```
+- **Rate Limiting (15 requests liên tiếp)**:
+  - Request 1-10: Trả về `200 OK`.
+  - Request 11-15: Trả về `429 Too Many Requests`.
 
 ---
 *Tự đánh giá: Đã hoàn thành toàn bộ Lab Day 12 - Deploying AI Agent to Production.*
